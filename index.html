@@ -1,0 +1,67 @@
+<!doctype html>
+<html dir="rtl" lang="fa">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پردازشگر و بهینه‌ساز آیکون پیکسلی</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>پردازشگر آیکون‌های پیکسلی 🎨</h1>
+        <p class="subtitle">آیکون وب‌سایتت رو بنداز اینجا تا رنگ‌هاش رو پاکسازی کنیم و حجمشو بیاریم پایین!</p>
+
+        <!-- پنل تنظیمات و آپلود -->
+        <div class="controls-card">
+            <div class="drop-zone" id="dropZone">
+                <input type="file" id="fileInput" accept="image/*" hidden>
+                <div class="drop-message">
+                    <span>📁 تصویر رو بکش اینجا یا <b style="color: #6366f1; cursor: pointer;">انتخاب کن</b></span>
+                </div>
+            </div>
+
+            <div class="settings-grid">
+                <div class="setting-item">
+                    <label>حداکثر تعداد رنگ (Max Colors): <span id="maxColorsVal">2</span></label>
+                    <input type="range" id="maxColors" min="1" max="16" value="2">
+                </div>
+                <div class="setting-item">
+                    <label>آستانه ادغام رنگ (Threshold): <span id="thresholdVal">40</span></label>
+                    <input type="range" id="threshold" min="0" max="150" value="40">
+                </div>
+                <div class="setting-item">
+                    <label>آستانه شفافیت (Alpha Cutoff): <span id="alphaVal">125</span></label>
+                    <input type="range" id="alphaValInput" min="0" max="255" value="125">
+                </div>
+                <div class="setting-item">
+                    <label>اندازه سلول HTML: <span id="cellSizeVal">14</span>px</label>
+                    <input type="range" id="cellSize" min="4" max="30" value="14">
+                </div>
+            </div>
+
+            <div class="actions">
+                <button id="processBtn" class="btn primary" disabled>پردازش تصویر 🚀</button>
+                <button id="downloadWebpBtn" class="btn secondary" disabled>دانلود WebP 🖼️</button>
+                <button id="downloadHtmlBtn" class="btn secondary" disabled>دانلود جدول HTML 📄</button>
+            </div>
+        </div>
+
+        <!-- بخش نمایش خروجی -->
+        <div class="output-card" id="outputCard" style="display: none;">
+            <div class="info-bar" id="infoBar"></div>
+            <div class="preview-container">
+                <div class="preview-box">
+                    <h3>تصویر پردازش شده</h3>
+                    <canvas id="previewCanvas"></canvas>
+                </div>
+                <div class="preview-box">
+                    <h3>نمایش ماتریسی (HTML)</h3>
+                    <div id="htmlTableContainer" class="table-scroll"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
