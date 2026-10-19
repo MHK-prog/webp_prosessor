@@ -1,58 +1,334 @@
 <!doctype html>
 <html dir="rtl" lang="fa">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>پاکسازی رنگ آیکون</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>پاکسازی رنگ آیکون</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
-    <div class="container">
-        <h1>پاکسازی رنگ آیکون 🎨</h1>
-        <p class="subtitle">رنگ‌های مرجع رو مشخص کن تا رنگ‌های اطرافشون یکدست بشن!</p>
+  <div class="container">
+    <h1>پاکسازی رنگ آیکون 🎨</h1>
+    <p class="subtitle">رنگ‌های مرجع رو مشخص کن تا رنگ‌های اطرافشون یکدست بشن!</p>
 
-        <div class="main-grid">
-            <!-- ستون تنظیمات و آپلود -->
-            <div class="controls-column">
-                <div class="drop-zone" id="dropZone">
-                    <input type="file" id="fileInput" accept="image/*" hidden>
-                    <div class="drop-message">
-                        <span>📁 تصویر را اینجا رها کنید یا <b style="color: #38bdf8; cursor: pointer;">انتخاب کنید</b></span>
-                        <small>فرمت‌های پشتیبانی شده: PNG, WebP, JPG</small>
-                    </div>
-                </div>
-
-                <!-- بخش رنگ‌های مرجع -->
-                <div class="card">
-                    <h3>رنگ‌های مرجع 🖌️</h3>
-                    <div id="paletteContainer" class="palette-list">
-                        <!-- رنگ‌ها اینجا به صورت دینامیک اضافه میشن -->
-                    </div>
-                    <div class="add-color-box">
-                        <input type="color" id="colorPicker" value="#8b5cf6">
-                        <button id="addColorBtn" class="btn secondary">افزودن رنگ مرجع</button>
-                    </div>
-                </div>
-
-                <!-- آستانه نزدیکی -->
-                <div class="card">
-                    <label>آستانه نزدیکی رنگ (Threshold): <span id="thresholdVal">40</span></label>
-                    <input type="range" id="threshold" min="0" max="150" value="40">
-                </div>
-            </div>
-
-            <!-- ستون پیش‌نمایش و خروجی -->
-            <div class="preview-column card">
-                <h3>پیش‌نمایش 👁️</h3>
-                <div class="canvas-container">
-                    <canvas id="previewCanvas"></canvas>
-                </div>
-                <p class="hint">💡 نکته: روی تصویر بالا کلیک کن تا رنگ همون نقطه به عنوان رنگ مرجع اضافه بشه!</p>
-                <button id="downloadWebpBtn" class="btn primary" disabled>📥 دانلود WebP</button>
-            </div>
+    <div class="main-grid">
+      <!-- ستون تنظیمات و آپلود -->
+      <div class="controls-column">
+        <div class="drop-zone" id="dropZone">
+          <input type="file" id="fileInput" accept="image/*" hidden />
+          <div class="drop-message">
+            <span>📁 تصویر را اینجا رها کنید یا <b style="color:#38bdf8; cursor:pointer;">انتخاب کنید</b></span>
+            <small>فرمت‌های پشتیبانی شده: PNG, WebP, JPG</small>
+          </div>
         </div>
-    </div>
 
-    <script src="script.js"></script>
+        <!-- بخش رنگ‌های مرجع -->
+        <div class="card">
+          <h3>رنگ‌های مرجع 🖌️</h3>
+
+          <div id="paletteContainer" class="palette-list"></div>
+
+          <div class="add-color-box">
+            <input type="color" id="colorPicker" value="#8b5cf6" />
+            <button id="addColorBtn" class="btn secondary">افزودن رنگ مرجع</button>
+          </div>
+        </div>
+
+        <!-- آستانه نزدیکی -->
+        <div class="card">
+          <label>آستانه نزدیکی رنگ (Threshold): <span id="thresholdVal">40</span></label>
+          <input type="range" id="threshold" min="0" max="150" value="40" />
+        </div>
+      </div>
+
+      <!-- ستون پیش‌نمایش و خروجی -->
+      <div class="preview-column card">
+        <h3>پیش‌نمایش 👁️</h3>
+
+        <div class="canvas-container">
+          <canvas id="previewCanvas"></canvas>
+        </div>
+
+        <p class="hint">💡 نکته: روی تصویر بالا کلیک کن تا رنگ همون نقطه به عنوان رنگ مرجع اضافه بشه!</p>
+
+        <button id="downloadWebpBtn" class="btn primary" disabled>📥 دانلود WebP</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // -----------------------------
+    // State
+    // -----------------------------
+    let originalImage = null;
+
+    // برای انتخاب رنگ دقیق از "تصویر اصلی" (نه خروجی پردازش‌شده)
+    let sourceCanvas = null;
+    let sourceCtx = null;
+
+    let referenceColors = [
+      [139, 92, 246], // بنفش پیش‌فرض
+      [6, 182, 212]   // آبی پیش‌فرض
+    ];
+
+    // -----------------------------
+    // Elements
+    // -----------------------------
+    const dropZone = document.getElementById("dropZone");
+    const fileInput = document.getElementById("fileInput");
+    const thresholdInput = document.getElementById("threshold");
+    const downloadWebpBtn = document.getElementById("downloadWebpBtn");
+    const previewCanvas = document.getElementById("previewCanvas");
+    const colorPicker = document.getElementById("colorPicker");
+    const addColorBtn = document.getElementById("addColorBtn");
+    const paletteContainer = document.getElementById("paletteContainer");
+    const thresholdVal = document.getElementById("thresholdVal");
+
+    // -----------------------------
+    // Init
+    // -----------------------------
+    renderPalette();
+
+    // -----------------------------
+    // Upload handlers
+    // -----------------------------
+    dropZone.addEventListener("click", () => fileInput.click());
+
+    dropZone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropZone.style.borderColor = "#38bdf8";
+    });
+
+    dropZone.addEventListener("dragleave", () => {
+      dropZone.style.borderColor = "#475569";
+    });
+
+    dropZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      if (e.dataTransfer.files.length) loadImage(e.dataTransfer.files[0]);
+    });
+
+    fileInput.addEventListener("change", (e) => {
+      if (e.target.files.length) loadImage(e.target.files[0]);
+    });
+
+    function loadImage(file) {
+      const reader = new FileReader();
+
+      reader.onload = function (event) {
+        const img = new Image();
+
+        img.onload = function () {
+          originalImage = img;
+
+          // بوم مخفی برای نگهداری تصویر اصلی (برای eyedropper)
+          sourceCanvas = document.createElement("canvas");
+          sourceCanvas.width = img.naturalWidth || img.width;
+          sourceCanvas.height = img.naturalHeight || img.height;
+
+          sourceCtx = sourceCanvas.getContext("2d", {
+            willReadFrequently: true
+          });
+
+          sourceCtx.clearRect(0, 0, sourceCanvas.width, sourceCanvas.height);
+          sourceCtx.drawImage(img, 0, 0, sourceCanvas.width, sourceCanvas.height);
+
+          dropZone.querySelector("span").innerHTML = `✅ فایل آماده: ${file.name}`;
+          processImage();
+        };
+
+        img.src = event.target.result;
+      };
+
+      reader.readAsDataURL(file);
+    }
+
+    // -----------------------------
+    // Manual add color
+    // -----------------------------
+    addColorBtn.addEventListener("click", () => {
+      const hex = colorPicker.value;
+      const r = parseInt(hex.substr(1, 2), 16);
+      const g = parseInt(hex.substr(3, 2), 16);
+      const b = parseInt(hex.substr(5, 2), 16);
+
+      const exists = referenceColors.some(([cr, cg, cb]) => cr === r && cg === g && cb === b);
+      if (!exists) referenceColors.push([r, g, b]);
+
+      renderPalette();
+      if (originalImage) processImage();
+    });
+
+    // -----------------------------
+    // Eyedropper: click on image
+    // -----------------------------
+    previewCanvas.addEventListener("click", (event) => {
+      if (!sourceCanvas || !sourceCtx) return;
+
+      const rect = previewCanvas.getBoundingClientRect();
+
+      // مختصات کلیک روی canvas نمایشی -> مختصات واقعی تصویر اصلی
+      const x = Math.floor((event.clientX - rect.left) * (sourceCanvas.width / rect.width));
+      const y = Math.floor((event.clientY - rect.top) * (sourceCanvas.height / rect.height));
+
+      if (x < 0 || y < 0 || x >= sourceCanvas.width || y >= sourceCanvas.height) return;
+
+      const [r, g, b, a] = sourceCtx.getImageData(x, y, 1, 1).data;
+
+      // شفاف‌ها انتخاب نشوند
+      if (a < 125) return;
+
+      const exists = referenceColors.some(([cr, cg, cb]) => cr === r && cg === g && cb === b);
+      if (exists) return;
+
+      referenceColors.push([r, g, b]);
+
+      // همگام‌سازی picker با رنگ انتخاب شده
+      colorPicker.value = "#" + [r, g, b].map(v => v.toString(16).padStart(2, "0")).join("");
+
+      renderPalette();
+      processImage();
+    });
+
+    // -----------------------------
+    // Palette UI
+    // -----------------------------
+    function renderPalette() {
+      paletteContainer.innerHTML = "";
+
+      referenceColors.forEach((rgb, index) => {
+        const hex = "#" + rgb.map(x => x.toString(16).padStart(2, "0")).join("");
+        const chip = document.createElement("div");
+        chip.className = "color-chip";
+        chip.innerHTML = `
+          <div class="color-dot" style="background:${hex}"></div>
+          <span>${hex.toUpperCase()}</span>
+          <button class="delete-chip" data-index="${index}">×</button>
+        `;
+        paletteContainer.appendChild(chip);
+      });
+
+      // رویداد حذف (بدون onclick توی HTML برای تمیزتر بودن)
+      paletteContainer.querySelectorAll(".delete-chip").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const index = parseInt(btn.getAttribute("data-index"), 10);
+          removeColor(index);
+        });
+      });
+    }
+
+    function removeColor(index) {
+      if (referenceColors.length <= 1) {
+        alert("حداقل یک رنگ مرجع باید وجود داشته باشد!");
+        return;
+      }
+      referenceColors.splice(index, 1);
+      renderPalette();
+      if (originalImage) processImage();
+    }
+
+    // -----------------------------
+    // Threshold
+    // -----------------------------
+    thresholdInput.addEventListener("input", () => {
+      thresholdVal.textContent = thresholdInput.value;
+      if (originalImage) processImage();
+    });
+
+    // -----------------------------
+    // Core processing (with strict alpha rules)
+    // -----------------------------
+    function processImage() {
+      if (!originalImage) return;
+
+      const threshold = parseInt(thresholdInput.value, 10);
+
+      const width = originalImage.naturalWidth || originalImage.width;
+      const height = originalImage.naturalHeight || originalImage.height;
+
+      // از sourceCanvas استفاده می‌کنیم تا هم سریع‌تر باشه هم دقیق‌تر
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
+      ctx.drawImage(sourceCanvas, 0, 0);
+
+      const imgData = ctx.getImageData(0, 0, width, height);
+      const pixels = imgData.data;
+      const newPixels = new Uint8ClampedArray(pixels.length);
+
+      for (let i = 0; i < pixels.length; i += 4) {
+        const r = pixels[i];
+        const g = pixels[i + 1];
+        const b = pixels[i + 2];
+        const a = pixels[i + 3];
+
+        // قانون شفافیت دقیق
+        if (a < 125) {
+          newPixels[i] = 0;
+          newPixels[i + 1] = 0;
+          newPixels[i + 2] = 0;
+          newPixels[i + 3] = 0;
+          continue;
+        }
+
+        // نزدیک‌ترین رنگ مرجع
+        let closestRef = referenceColors[0];
+        let minDist = Infinity;
+
+        for (let j = 0; j < referenceColors.length; j++) {
+          const ref = referenceColors[j];
+          const dr = r - ref[0];
+          const dg = g - ref[1];
+          const db = b - ref[2];
+          const dist = Math.sqrt(dr * dr + dg * dg + db * db);
+
+          if (dist < minDist) {
+            minDist = dist;
+            closestRef = ref;
+          }
+        }
+
+        // اگر توی آستانه بود تبدیل کن، اگر نه رنگ خودش بمونه
+        if (minDist <= threshold) {
+          newPixels[i] = closestRef[0];
+          newPixels[i + 1] = closestRef[1];
+          newPixels[i + 2] = closestRef[2];
+        } else {
+          newPixels[i] = r;
+          newPixels[i + 1] = g;
+          newPixels[i + 2] = b;
+        }
+
+        // قانون: غیرشفاف‌ها حتما 255
+        newPixels[i + 3] = 255;
+      }
+
+      // نمایش روی بوم
+      previewCanvas.width = width;
+      previewCanvas.height = height;
+
+      const pCtx = previewCanvas.getContext("2d", { willReadFrequently: true });
+      pCtx.putImageData(new ImageData(newPixels, width, height), 0, 0);
+
+      downloadWebpBtn.disabled = false;
+    }
+
+    // -----------------------------
+    // Export WebP (lossless)
+    // -----------------------------
+    downloadWebpBtn.addEventListener("click", () => {
+      previewCanvas.toBlob((blob) => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "cleaned_icon.webp";
+        a.click();
+        URL.revokeObjectURL(url);
+      }, "image/webp", 1.0);
+    });
+  </script>
 </body>
 </html>
