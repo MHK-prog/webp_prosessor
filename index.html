@@ -1,334 +1,309 @@
 <!doctype html>
-<html dir="rtl" lang="fa">
+<html lang="fa" dir="rtl">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>پاکسازی رنگ آیکون</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>تیم‌بندی و پالت‌ساز WebP</title>
+  <style>
+    :root{--bg:#0b0f14;--card:#121926;--text:#e8eef7;--muted:#9bb0c9;--line:#223045;--btn:#2d6cdf;}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto;background:var(--bg);color:var(--text);padding:10px}
+    .wrap{max-width:600px;margin:0 auto;padding-bottom:40px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}
+    h1{font-size:16px;margin:0 0 12px;text-align:center}
+    h2{font-size:14px;margin:0 0 10px;color:var(--muted);font-weight:600}
+    .controls{display:flex;flex-direction:column;gap:12px}
+    .row-inputs{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    input[type="file"]{width:100%;color:var(--muted);padding:8px;background:#0d1420;border:1px solid var(--line);border-radius:10px}
+    button{border:0;background:var(--btn);color:white;padding:12px;border-radius:12px;cursor:pointer;font-weight:700;font-size:14px;width:100%}
+    button:disabled{opacity:.4;cursor:not-allowed}
+    .small{font-size:12px;color:var(--muted)}
+    .grid{display:grid;grid-template-columns:1fr;gap:8px}
+    .swatch{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#0d1420;cursor:pointer}
+    .swatch input[type="checkbox"]{width:22px;height:22px;accent-color:var(--btn)}
+    .chip{width:42px;height:42px;border-radius:10px;border:1px solid rgba(255,255,255,.2);flex-shrink:0}
+    .meta{display:flex;flex-direction:column;gap:2px;flex-grow:1}
+    .code{font-family:monospace;font-size:14px;color:#cfe3ff;font-weight:bold}
+    .canvWrap{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+    canvas{width:100%;height:auto;background:#0a0f18;border:1px dashed var(--line);border-radius:12px}
+    .pill{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border:1px solid var(--line);border-radius:12px;background:#0d1420;color:var(--muted)}
+    select,input[type="number"]{background:#121926;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px;font-size:14px}
+  </style>
 </head>
-
 <body>
-  <div class="container">
-    <h1>پاکسازی رنگ آیکون 🎨</h1>
-    <p class="subtitle">رنگ‌های مرجع رو مشخص کن تا رنگ‌های اطرافشون یکدست بشن!</p>
-
-    <div class="main-grid">
-      <!-- ستون تنظیمات و آپلود -->
-      <div class="controls-column">
-        <div class="drop-zone" id="dropZone">
-          <input type="file" id="fileInput" accept="image/*" hidden />
-          <div class="drop-message">
-            <span>📁 تصویر را اینجا رها کنید یا <b style="color:#38bdf8; cursor:pointer;">انتخاب کنید</b></span>
-            <small>فرمت‌های پشتیبانی شده: PNG, WebP, JPG</small>
-          </div>
-        </div>
-
-        <!-- بخش رنگ‌های مرجع -->
-        <div class="card">
-          <h3>رنگ‌های مرجع 🖌️</h3>
-
-          <div id="paletteContainer" class="palette-list"></div>
-
-          <div class="add-color-box">
-            <input type="color" id="colorPicker" value="#8b5cf6" />
-            <button id="addColorBtn" class="btn secondary">افزودن رنگ مرجع</button>
-          </div>
-        </div>
-
-        <!-- آستانه نزدیکی -->
-        <div class="card">
-          <label>آستانه نزدیکی رنگ (Threshold): <span id="thresholdVal">40</span></label>
-          <input type="range" id="threshold" min="0" max="150" value="40" />
-        </div>
+<div class="wrap">
+  <div class="card">
+    <h1>تیم‌بندی و پالت‌ساز WebP</h1>
+    <div class="controls">
+      <input id="file" type="file" accept="image/webp,image/png,image/*" />
+      
+      <div class="row-inputs">
+        <label class="pill">
+          <span class="small">فاصله تیم (تلورانس)</span>
+          <input id="tolerance" type="number" min="5" max="80" value="25" style="width:60px;">
+        </label>
+        <label class="pill">
+          <span class="small">تعداد تیم برتر</span>
+          <input id="topN" type="number" min="2" max="25" value="10" style="width:60px;">
+        </label>
       </div>
 
-      <!-- ستون پیش‌نمایش و خروجی -->
-      <div class="preview-column card">
-        <h3>پیش‌نمایش 👁️</h3>
-
-        <div class="canvas-container">
-          <canvas id="previewCanvas"></canvas>
-        </div>
-
-        <p class="hint">💡 نکته: روی تصویر بالا کلیک کن تا رنگ همون نقطه به عنوان رنگ مرجع اضافه بشه!</p>
-
-        <button id="downloadWebpBtn" class="btn primary" disabled>📥 دانلود WebP</button>
+      <div class="pill">
+        <span class="small">آستانه آلفا (شفافیت)</span>
+        <input id="alpha" type="number" min="0" max="255" value="125" style="width:60px;">
       </div>
+
+      <button id="analyze" disabled>۱. تشکیل تیم‌ها و یافتن نماینده‌ها</button>
+      <span id="status" class="small" style="text-align:center;"></span>
     </div>
   </div>
 
-  <script>
-    // -----------------------------
-    // State
-    // -----------------------------
-    let originalImage = null;
+  <div class="card" id="paletteCard" style="display:none;">
+    <h2>۲. انتخاب نماینده‌ها برای پالت نهایی</h2>
+    <div id="colors" class="grid"></div>
+    <div style="margin-top:12px;">
+      <button id="process">۳. تبدیل تصویر به پالت انتخابی</button>
+    </div>
+  </div>
 
-    // برای انتخاب رنگ دقیق از "تصویر اصلی" (نه خروجی پردازش‌شده)
-    let sourceCanvas = null;
-    let sourceCtx = null;
+  <div class="card" id="previewCard" style="display:none;">
+    <h2>۴. نتیجه نهایی</h2>
+    <div class="canvWrap">
+      <div>
+        <div class="small" style="margin-bottom:4px;text-align:center;">ورودی</div>
+        <canvas id="inCanvas"></canvas>
+      </div>
+      <div>
+        <div class="small" style="margin-bottom:4px;text-align:center;">خروجی</div>
+        <canvas id="outCanvas"></canvas>
+      </div>
+    </div>
+    <button id="download" style="background:#10b981;">دانلود خروجی WebP</button>
+  </div>
+</div>
 
-    let referenceColors = [
-      [139, 92, 246], // بنفش پیش‌فرض
-      [6, 182, 212]   // آبی پیش‌فرض
-    ];
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
 
-    // -----------------------------
-    // Elements
-    // -----------------------------
-    const dropZone = document.getElementById("dropZone");
-    const fileInput = document.getElementById("fileInput");
-    const thresholdInput = document.getElementById("threshold");
-    const downloadWebpBtn = document.getElementById("downloadWebpBtn");
-    const previewCanvas = document.getElementById("previewCanvas");
-    const colorPicker = document.getElementById("colorPicker");
-    const addColorBtn = document.getElementById("addColorBtn");
-    const paletteContainer = document.getElementById("paletteContainer");
-    const thresholdVal = document.getElementById("thresholdVal");
+  const fileEl = $("file");
+  const analyzeBtn = $("analyze");
+  const processBtn = $("process");
+  const downloadBtn = $("download");
+  const statusEl = $("status");
+  const toleranceEl = $("tolerance");
+  const alphaEl = $("alpha");
+  const topNEl = $("topN");
 
-    // -----------------------------
-    // Init
-    // -----------------------------
-    renderPalette();
+  const colorsEl = $("colors");
+  const paletteCard = $("paletteCard");
+  const previewCard = $("previewCard");
 
-    // -----------------------------
-    // Upload handlers
-    // -----------------------------
-    dropZone.addEventListener("click", () => fileInput.click());
+  const inCanvas = $("inCanvas");
+  const outCanvas = $("outCanvas");
+  const inCtx = inCanvas.getContext("2d", { willReadFrequently: true });
+  const outCtx = outCanvas.getContext("2d", { willReadFrequently: true });
 
-    dropZone.addEventListener("dragover", (e) => {
-      e.preventDefault();
-      dropZone.style.borderColor = "#38bdf8";
-    });
+  let imgData = null;
+  let teams = []; // [{ rep: {r,g,b,hex}, totalCount: number, repCount: number }]
+  let selectedHex = new Set();
+  let outputReady = false;
 
-    dropZone.addEventListener("dragleave", () => {
-      dropZone.style.borderColor = "#475569";
-    });
+  const clamp = (n,a,b)=>Math.max(a,Math.min(b,n));
+  const setStatus = (t)=> statusEl.textContent = t || "";
 
-    dropZone.addEventListener("drop", (e) => {
-      e.preventDefault();
-      if (e.dataTransfer.files.length) loadImage(e.dataTransfer.files[0]);
-    });
+  function rgbToHex(r,g,b){
+    const h = (x) => x.toString(16).padStart(2,"0");
+    return `#${h(r)}${h(g)}${h(b)}`;
+  }
+  function hexToRgb(hex){
+    const m = /^#?([0-9a-f]{6})$/i.exec(hex);
+    if(!m) return null;
+    const n = parseInt(m[1], 16);
+    return { r:(n>>16)&255, g:(n>>8)&255, b:n&255 };
+  }
 
-    fileInput.addEventListener("change", (e) => {
-      if (e.target.files.length) loadImage(e.target.files[0]);
-    });
+  function drawToCanvas(image){
+    const w = image.naturalWidth || image.width;
+    const h = image.naturalHeight || image.height;
+    inCanvas.width = w; inCanvas.height = h;
+    outCanvas.width = w; outCanvas.height = h;
+    inCtx.clearRect(0,0,w,h);
+    outCtx.clearRect(0,0,w,h);
+    inCtx.drawImage(image, 0, 0);
+    imgData = inCtx.getImageData(0,0,w,h);
+  }
 
-    function loadImage(file) {
-      const reader = new FileReader();
+  // تشکیل تیم‌ها با اصل KISS
+  function clusterTeams(){
+    if(!imgData) return;
+    const alphaCutoff = clamp(parseInt(alphaEl.value || "125", 10), 0, 255);
+    const tol = clamp(parseInt(toleranceEl.value || "25", 10), 1, 150);
+    const tolSq = tol * tol;
+    const topN = clamp(parseInt(topNEl.value || "10", 10), 2, 30);
 
-      reader.onload = function (event) {
-        const img = new Image();
+    const data = imgData.data;
+    const counts = new Map();
 
-        img.onload = function () {
-          originalImage = img;
-
-          // بوم مخفی برای نگهداری تصویر اصلی (برای eyedropper)
-          sourceCanvas = document.createElement("canvas");
-          sourceCanvas.width = img.naturalWidth || img.width;
-          sourceCanvas.height = img.naturalHeight || img.height;
-
-          sourceCtx = sourceCanvas.getContext("2d", {
-            willReadFrequently: true
-          });
-
-          sourceCtx.clearRect(0, 0, sourceCanvas.width, sourceCanvas.height);
-          sourceCtx.drawImage(img, 0, 0, sourceCanvas.width, sourceCanvas.height);
-
-          dropZone.querySelector("span").innerHTML = `✅ فایل آماده: ${file.name}`;
-          processImage();
-        };
-
-        img.src = event.target.result;
-      };
-
-      reader.readAsDataURL(file);
+    // ۱. شمارش فرکانس هر رنگ یکتا
+    for(let i=0; i<data.length; i+=4){
+      if(data[i+3] < alphaCutoff) continue;
+      const key = `${data[i]},${data[i+1]},${data[i+2]}`;
+      counts.set(key, (counts.get(key) || 0) + 1);
     }
 
-    // -----------------------------
-    // Manual add color
-    // -----------------------------
-    addColorBtn.addEventListener("click", () => {
-      const hex = colorPicker.value;
-      const r = parseInt(hex.substr(1, 2), 16);
-      const g = parseInt(hex.substr(3, 2), 16);
-      const b = parseInt(hex.substr(5, 2), 16);
+    // مرتب‌سازی از پر تکرارترین به کم‌تکرارترین
+    const sortedColors = [...counts.entries()]
+      .map(([k, count]) => {
+        const [r,g,b] = k.split(",").map(Number);
+        return { r, g, b, count, hex: rgbToHex(r,g,b) };
+      })
+      .sort((a,b) => b.count - a.count);
 
-      const exists = referenceColors.some(([cr, cg, cb]) => cr === r && cg === g && cb === b);
-      if (!exists) referenceColors.push([r, g, b]);
+    // ۲. تشکیل تیم‌ها (اولین رنگ ورودی به هر تیم، نماینده با بیشترین تکرار است)
+    const rawTeams = [];
 
-      renderPalette();
-      if (originalImage) processImage();
-    });
+    for(const col of sortedColors){
+      let joined = false;
+      for(const t of rawTeams){
+        const dr = col.r - t.rep.r;
+        const dg = col.g - t.rep.g;
+        const db = col.b - t.rep.b;
+        const distSq = dr*dr + dg*dg + db*db;
 
-    // -----------------------------
-    // Eyedropper: click on image
-    // -----------------------------
-    previewCanvas.addEventListener("click", (event) => {
-      if (!sourceCanvas || !sourceCtx) return;
+        if(distSq <= tolSq){
+          t.totalCount += col.count;
+          joined = true;
+          break;
+        }
+      }
 
-      const rect = previewCanvas.getBoundingClientRect();
-
-      // مختصات کلیک روی canvas نمایشی -> مختصات واقعی تصویر اصلی
-      const x = Math.floor((event.clientX - rect.left) * (sourceCanvas.width / rect.width));
-      const y = Math.floor((event.clientY - rect.top) * (sourceCanvas.height / rect.height));
-
-      if (x < 0 || y < 0 || x >= sourceCanvas.width || y >= sourceCanvas.height) return;
-
-      const [r, g, b, a] = sourceCtx.getImageData(x, y, 1, 1).data;
-
-      // شفاف‌ها انتخاب نشوند
-      if (a < 125) return;
-
-      const exists = referenceColors.some(([cr, cg, cb]) => cr === r && cg === g && cb === b);
-      if (exists) return;
-
-      referenceColors.push([r, g, b]);
-
-      // همگام‌سازی picker با رنگ انتخاب شده
-      colorPicker.value = "#" + [r, g, b].map(v => v.toString(16).padStart(2, "0")).join("");
-
-      renderPalette();
-      processImage();
-    });
-
-    // -----------------------------
-    // Palette UI
-    // -----------------------------
-    function renderPalette() {
-      paletteContainer.innerHTML = "";
-
-      referenceColors.forEach((rgb, index) => {
-        const hex = "#" + rgb.map(x => x.toString(16).padStart(2, "0")).join("");
-        const chip = document.createElement("div");
-        chip.className = "color-chip";
-        chip.innerHTML = `
-          <div class="color-dot" style="background:${hex}"></div>
-          <span>${hex.toUpperCase()}</span>
-          <button class="delete-chip" data-index="${index}">×</button>
-        `;
-        paletteContainer.appendChild(chip);
-      });
-
-      // رویداد حذف (بدون onclick توی HTML برای تمیزتر بودن)
-      paletteContainer.querySelectorAll(".delete-chip").forEach(btn => {
-        btn.addEventListener("click", () => {
-          const index = parseInt(btn.getAttribute("data-index"), 10);
-          removeColor(index);
+      if(!joined){
+        rawTeams.push({
+          rep: col,
+          repCount: col.count,
+          totalCount: col.count
         });
-      });
+      }
     }
 
-    function removeColor(index) {
-      if (referenceColors.length <= 1) {
-        alert("حداقل یک رنگ مرجع باید وجود داشته باشد!");
+    // مرتب‌سازی تیم‌ها بر اساس بزرگی کل تیم
+    teams = rawTeams.sort((a,b) => b.totalCount - a.totalCount).slice(0, topN);
+    selectedHex = new Set(teams.map(t => t.rep.hex));
+    renderTeamList();
+
+    paletteCard.style.display = "block";
+    previewCard.style.display = "none";
+    setStatus(`تعداد ${teams.length} نماینده تیم پیدا شد.`);
+  }
+
+  function renderTeamList(){
+    colorsEl.innerHTML = "";
+    teams.forEach((t, index) => {
+      const row = document.createElement("label");
+      row.className = "swatch";
+
+      const chk = document.createElement("input");
+      chk.type = "checkbox";
+      chk.checked = selectedHex.has(t.rep.hex);
+      chk.addEventListener("change", () => {
+        if(chk.checked) selectedHex.add(t.rep.hex);
+        else selectedHex.delete(t.rep.hex);
+      });
+
+      const chip = document.createElement("div");
+      chip.className = "chip";
+      chip.style.background = t.rep.hex;
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+      meta.innerHTML = `
+        <div class="code">تیم #${index + 1} : ${t.rep.hex}</div>
+        <div class="small">نماینده: ${t.repCount.toLocaleString()} px | کل تیم: ${t.totalCount.toLocaleString()} px</div>
+      `;
+
+      row.appendChild(chk);
+      row.appendChild(chip);
+      row.appendChild(meta);
+      colorsEl.appendChild(row);
+    });
+  }
+
+  function processImage(){
+    if(!imgData || selectedHex.size === 0) return;
+    const alphaCutoff = clamp(parseInt(alphaEl.value || "125", 10), 0, 255);
+    const palette = [...selectedHex].map(hexToRgb).filter(Boolean);
+
+    const w = imgData.width, h = imgData.height;
+    const src = imgData.data;
+    const out = new Uint8ClampedArray(src.length);
+
+    for(let i=0; i<src.length; i+=4){
+      const a = src[i+3];
+      if(a < alphaCutoff){
+        out[i+3] = 0;
+        continue;
+      }
+      const r = src[i], g = src[i+1], b = src[i+2];
+      let best = 0, bestD = Infinity;
+
+      for(let p=0; p<palette.length; p++){
+        const pr = palette[p].r, pg = palette[p].g, pb = palette[p].b;
+        const d2 = (r-pr)**2 + (g-pg)**2 + (b-pb)**2;
+        if(d2 < bestD){ bestD = d2; best = p; }
+      }
+
+      const pick = palette[best];
+      out[i]=pick.r; out[i+1]=pick.g; out[i+2]=pick.b; out[i+3]=255;
+    }
+
+    outCtx.putImageData(new ImageData(out, w, h), 0, 0);
+    outputReady = true;
+    previewCard.style.display = "block";
+    previewCard.scrollIntoView({behavior: "smooth"});
+    setStatus(`پردازش تموم شد! (${palette.length} رنگ نماینده اعمال شد)`);
+  }
+
+  function downloadWebP(){
+    if(!outputReady) return;
+    setStatus("در حال فشرده‌سازی WebP...");
+
+    // خروجی WebP بدون افت (Lossless)
+    outCanvas.toBlob(blob => {
+      if(!blob){
+        setStatus("خطا در ایجاد WebP");
         return;
       }
-      referenceColors.splice(index, 1);
-      renderPalette();
-      if (originalImage) processImage();
-    }
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "team-palette-icon.webp";
+      a.click();
+      setStatus(`دانلود شد! (${(blob.size/1024).toFixed(1)} KB)`);
+    }, "image/webp");
+  }
 
-    // -----------------------------
-    // Threshold
-    // -----------------------------
-    thresholdInput.addEventListener("input", () => {
-      thresholdVal.textContent = thresholdInput.value;
-      if (originalImage) processImage();
-    });
+  fileEl.addEventListener("change", (e) => {
+    const f = e.target.files && e.target.files[0];
+    if(!f) return;
+    setStatus("در حال بارگذاری فایل...");
+    paletteCard.style.display = "none";
+    previewCard.style.display = "none";
 
-    // -----------------------------
-    // Core processing (with strict alpha rules)
-    // -----------------------------
-    function processImage() {
-      if (!originalImage) return;
+    const url = URL.createObjectURL(f);
+    const img = new Image();
+    img.onload = () => {
+      drawToCanvas(img);
+      analyzeBtn.disabled = false;
+      setStatus("تصویر آماده است. مرحله ۱ را بزنید.");
+      URL.revokeObjectURL(url);
+    };
+    img.src = url;
+  });
 
-      const threshold = parseInt(thresholdInput.value, 10);
-
-      const width = originalImage.naturalWidth || originalImage.width;
-      const height = originalImage.naturalHeight || originalImage.height;
-
-      // از sourceCanvas استفاده می‌کنیم تا هم سریع‌تر باشه هم دقیق‌تر
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-
-      const ctx = canvas.getContext("2d", { willReadFrequently: true });
-      ctx.drawImage(sourceCanvas, 0, 0);
-
-      const imgData = ctx.getImageData(0, 0, width, height);
-      const pixels = imgData.data;
-      const newPixels = new Uint8ClampedArray(pixels.length);
-
-      for (let i = 0; i < pixels.length; i += 4) {
-        const r = pixels[i];
-        const g = pixels[i + 1];
-        const b = pixels[i + 2];
-        const a = pixels[i + 3];
-
-        // قانون شفافیت دقیق
-        if (a < 125) {
-          newPixels[i] = 0;
-          newPixels[i + 1] = 0;
-          newPixels[i + 2] = 0;
-          newPixels[i + 3] = 0;
-          continue;
-        }
-
-        // نزدیک‌ترین رنگ مرجع
-        let closestRef = referenceColors[0];
-        let minDist = Infinity;
-
-        for (let j = 0; j < referenceColors.length; j++) {
-          const ref = referenceColors[j];
-          const dr = r - ref[0];
-          const dg = g - ref[1];
-          const db = b - ref[2];
-          const dist = Math.sqrt(dr * dr + dg * dg + db * db);
-
-          if (dist < minDist) {
-            minDist = dist;
-            closestRef = ref;
-          }
-        }
-
-        // اگر توی آستانه بود تبدیل کن، اگر نه رنگ خودش بمونه
-        if (minDist <= threshold) {
-          newPixels[i] = closestRef[0];
-          newPixels[i + 1] = closestRef[1];
-          newPixels[i + 2] = closestRef[2];
-        } else {
-          newPixels[i] = r;
-          newPixels[i + 1] = g;
-          newPixels[i + 2] = b;
-        }
-
-        // قانون: غیرشفاف‌ها حتما 255
-        newPixels[i + 3] = 255;
-      }
-
-      // نمایش روی بوم
-      previewCanvas.width = width;
-      previewCanvas.height = height;
-
-      const pCtx = previewCanvas.getContext("2d", { willReadFrequently: true });
-      pCtx.putImageData(new ImageData(newPixels, width, height), 0, 0);
-
-      downloadWebpBtn.disabled = false;
-    }
-
-    // -----------------------------
-    // Export WebP (lossless)
-    // -----------------------------
-    downloadWebpBtn.addEventListener("click", () => {
-      previewCanvas.toBlob((blob) => {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "cleaned_icon.webp";
-        a.click();
-        URL.revokeObjectURL(url);
-      }, "image/webp", 1.0);
-    });
-  </script>
+  analyzeBtn.addEventListener("click", clusterTeams);
+  processBtn.addEventListener("click", processImage);
+  downloadBtn.addEventListener("click", downloadWebP);
+})();
+</script>
 </body>
 </html>
